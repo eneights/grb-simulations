@@ -27,6 +27,7 @@ class ACSData():
 		'''
 
 		self.binned = binned
+		self.panels = ['z0', 'z1', 'x0', 'x1', 'y0', 'y1']
 
 		if self.binned:
 
@@ -41,7 +42,7 @@ class ACSData():
 
 		for panel in data:
 
-			if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+			if panel in self.panels:
 
 				if sort and not self.binned:
 					panel_data = sorted(data[panel], key=lambda x: x[0].to(u.s).value)
@@ -110,11 +111,9 @@ class ACSData():
 
 		if 'type' in attributes and attributes['type'] == 'binned':
 
-			panels = ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']
-
 			bins = {'time': [value * u.s for value in data['time bins (s)']], 
 					'energy': [value * u.keV for value in data['energy bins (keV)']]}
-			data = {panel: data[panel] for panel in panels}
+			data = {panel: data[panel] for panel in self.panels}
 
 			acs_data = cls(data, binned=True, bins=bins)
 
@@ -167,8 +166,8 @@ class ACSData():
 
 		logger.info(f"Reading file: {file}")
 
-		times = {'b1': [], 'b2': [], 'x1': [], 'x2': [], 'y1': [], 'y2': []}
-		energies = {'b1': [], 'b2': [], 'x1': [], 'x2': [], 'y1': [], 'y2': []}
+		times = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
+		energies = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
 
 		data = pd.read_csv(file, compression='gzip')
 		
@@ -176,13 +175,13 @@ class ACSData():
 
 			if data['bgo_bottom_1[keV]'][i] != 0.0:
 
-				times['b1'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['b1'].append(float(data['bgo_bottom_1[keV]'][i]) * u.keV)
+				times['z1'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['z1'].append(float(data['bgo_bottom_1[keV]'][i]) * u.keV)
 
 			elif data['bgo_bottom_2[keV]'][i] != 0.0:
 
-				times['b2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['b2'].append(float(data['bgo_bottom_2[keV]'][i]) * u.keV)
+				times['z0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['z0'].append(float(data['bgo_bottom_2[keV]'][i]) * u.keV)
 
 			elif data['bgo_x1[keV]'][i] != 0.0:
 
@@ -191,18 +190,18 @@ class ACSData():
 
 			elif data['bgo_x2[keV]'][i] != 0.0:
 
-				times['x2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['x2'].append(float(data['bgo_x2[keV]'][i]) * u.keV)
+				times['x0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['x0'].append(float(data['bgo_x2[keV]'][i]) * u.keV)
 
 			elif data['bgo_y1[keV]'][i] != 0.0:
 
-				times['y1'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['y1'].append(float(data['bgo_y1[keV]'][i]) * u.keV)
+				times['y0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['y0'].append(float(data['bgo_y1[keV]'][i]) * u.keV)
 
 			elif data['bgo_y2[keV]'][i] != 0.0:
 
-				times['y2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['y2'].append(float(data['bgo_y2[keV]'][i]) * u.keV)
+				times['y1'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['y1'].append(float(data['bgo_y2[keV]'][i]) * u.keV)
 
 		acs_data = cls({key: list(zip(times[key], energies[key])) for key in times})
 
@@ -253,12 +252,12 @@ class ACSData():
 					raise RuntimeError("Files must be binned with same energy bins.")
 
 				for panel, value in vars(data).items():
-					if panel in ['x1', 'x2', 'y1', 'y2', 'b1', 'b2']:
+					if panel in self.panels:
 						setattr(data, panel, np.add(value, getattr(component_data, panel)))
 
 			counts = 0
 			for panel, value in vars(data).items():
-				if panel in ['x1', 'x2', 'y1', 'y2', 'b1', 'b2']:
+				if panel in self.panels:
 					counts += np.sum(value)
 
 			logger.info(f"Added {file}. Total counts: {int(counts)}")
@@ -318,7 +317,7 @@ class ACSData():
 
 		binned_data = {}
 
-		for panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+		for panel in self.panels:
 
 			unbinned_panel_data = getattr(self, panel)
 			unbinned_panel_data = [(t.to(u.s).value, e.to(u.keV).value) for t, e in unbinned_panel_data]
@@ -380,7 +379,7 @@ class ACSData():
 
 			for panel in list(vars(self)):
 
-				if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+				if panel in self.panels:
 
 					acs_data[panel] = getattr(self, panel)
 
@@ -393,7 +392,7 @@ class ACSData():
 
 			for panel in list(vars(self)):
 
-				if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+				if panel in self.panels:
 
 					panel_data = {panel: [tuple(value.to(unit).value for value, unit in zip(hit, (u.s, u.keV))) for hit in getattr(self, panel)]}
 					acs_data = acs_data | panel_data
@@ -432,7 +431,7 @@ class ACSData():
 		time_range = (time_range[0], time_range[0] + duration)
 		bin_edges = np.linspace(time_range[0].to_value(u.s), time_range[1].to_value(u.s), nbins+1)
 
-		for panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+		for panel in self.panels:
 
 			hits = getattr(self, panel)
 
