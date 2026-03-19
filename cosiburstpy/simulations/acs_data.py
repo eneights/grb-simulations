@@ -363,7 +363,7 @@ class ACSData():
 
 	def write_file(self, file):
 		'''
-		Write ACS data file or files.
+		Write ACS data file.
 
 		Parameters
 		----------
@@ -398,6 +398,47 @@ class ACSData():
 					acs_data = acs_data | panel_data
 
 			write_hdf5(file, acs_data, file_attributes={'type': 'unbinned', 'columns': ['time (s)', 'energy (keV)']})
+
+	def slice(self, start_time, end_time, file=None):
+		'''
+		and write to file.
+
+		Parameters
+		----------
+		start_time : astropy.units.quantity.Quantity
+			Start time of sliced data
+		end_time : astropy.units.quantity.Quantity
+			End time of sliced data
+		file : pathlib.PosixPath, optional
+			Path to ACS data .hdf5 file
+		'''
+
+		if self.binned:
+
+			i_start = np.searchsorted(self.time_bin_edges, start_time, side='right') - 1
+			i_end = np.searchsorted(self.time_bin_edges, end_time, side='left')
+
+			self.time_bin_edges = self.time_bin_edges[i_start:i_end+1]
+
+			for panel in self.panels:
+				setattr(self, panel, getattr(self, panel)[i_start:i_end, :])
+
+		else:
+
+			for panel in self.panels:
+
+				times = u.Quantity([t for t, _ in getattr(self, panel)])
+				energies = u.Quantity([e for _, e in getattr(self, panel)])
+
+				mask = (times >= t_start) & (times <= t_end)
+
+				times_sliced = times[mask]
+				energies_sliced = energies[mask]
+
+				setattr(self, panel, list(zip(times_sliced, energies_sliced)))
+
+		if file is not None:
+			self.write_file(file)
 
 	def plot(self, time_range, energy_range=(80.*u.keV, 2000*u.keV), bin_size=0.05*u.s, file=None, show=False, colors={'b1': 'red', 'b2': 'green', 'x1': 'blue', 'x2': 'orange', 'y1': 'purple', 'y2': 'pink'}, event_time_range=None, title=None, dpi=350):
 		'''
