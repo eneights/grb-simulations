@@ -27,6 +27,7 @@ class ACSData():
 		'''
 
 		self.binned = binned
+		self.panels = ['z0', 'z1', 'x0', 'x1', 'y0', 'y1']
 
 		if self.binned:
 
@@ -41,7 +42,7 @@ class ACSData():
 
 		for panel in data:
 
-			if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+			if panel in self.panels:
 
 				if sort and not self.binned:
 					panel_data = sorted(data[panel], key=lambda x: x[0].to(u.s).value)
@@ -55,7 +56,7 @@ class ACSData():
 				raise RuntimeError(f"{panel} is not a valid panel name.")
 
 	@classmethod
-	def from_file(cls, file, mass_model=None, sort=True):
+	def from_file(cls, file, mass_model=None, sort=True, stop_time=None, chunk_size=None):
 		'''
 		Read in ACS data file.
 
@@ -67,6 +68,10 @@ class ACSData():
 			Path to analysis mass model if reading .sim or .sim.gz file
 		sort : bool, optional
 			Whether to sort by time
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 
 		Returns
 		-------
@@ -81,7 +86,7 @@ class ACSData():
 			acs_data = cls.from_sim_file(file, mass_model)
 
 		elif ''.join(file.suffixes) == '.csv.gz':
-			acs_data = cls.from_csv_file(file)
+			acs_data = cls.from_csv_file(file, stop_time=stop_time, chunk_size=chunk_size)
 
 		else:
 			raise RuntimeError(f"{file.suffix} files are not supported for ACS data.")
@@ -110,11 +115,9 @@ class ACSData():
 
 		if 'type' in attributes and attributes['type'] == 'binned':
 
-			panels = ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']
-
 			bins = {'time': [value * u.s for value in data['time bins (s)']], 
 					'energy': [value * u.keV for value in data['energy bins (keV)']]}
-			data = {panel: data[panel] for panel in panels}
+			data = {panel: data[panel] for panel in self.panels}
 
 			acs_data = cls(data, binned=True, bins=bins)
 
@@ -150,7 +153,7 @@ class ACSData():
 		return acs_data
 
 	@classmethod
-	def from_csv_file(cls, file):
+	def from_csv_file(cls, file, stop_time=None, chunk_size=None):
 		'''
 		Extract ACS hits from .csv.gz file in Savitri's format.
 
@@ -158,6 +161,10 @@ class ACSData():
 		----------
 		file : pathlib.PosixPath
 			Path to ACS data .csv.gz file
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 	
 		Returns
 		-------
@@ -167,42 +174,57 @@ class ACSData():
 
 		logger.info(f"Reading file: {file}")
 
-		times = {'b1': [], 'b2': [], 'x1': [], 'x2': [], 'y1': [], 'y2': []}
-		energies = {'b1': [], 'b2': [], 'x1': [], 'x2': [], 'y1': [], 'y2': []}
+		times = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
+		energies = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
 
-		data = pd.read_csv(file, compression='gzip')
+		if chunk_size is None:
+
+			data = pd.read_csv(file, compression='gzip')
+
+		else:
+
+			chunks = []
+
+			for chunk in pd.read_csv(file, compression='gzip', chunksize=chunk_size):
+
+				chunks.append(chunk)
+
+				if (chunk['timestamp[s]'] == stop_time.to_value(u.s)).any():
+					break
+
+			data = pd.concat(chunks, ignore_index=True)
 		
 		for i in range(len(data['timestamp[s]'])):
 
-			if data['bgo_bottom_1[keV]'][i] != 0.0:
+			if data['SCB2-A1[keV]'][i] != 0.0:
 
-				times['b1'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['b1'].append(float(data['bgo_bottom_1[keV]'][i]) * u.keV)
+				times['z1'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['z1'].append(float(data['SCB2-A1[keV]'][i]) * u.keV)
 
-			elif data['bgo_bottom_2[keV]'][i] != 0.0:
+			elif data['SCB2-A0[keV]'][i] != 0.0:
 
-				times['b2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['b2'].append(float(data['bgo_bottom_2[keV]'][i]) * u.keV)
+				times['z0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['z0'].append(float(data['SCB2-A0[keV]'][i]) * u.keV)
 
-			elif data['bgo_x1[keV]'][i] != 0.0:
+			elif data['SCB0-A1[keV]'][i] != 0.0:
 
 				times['x1'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['x1'].append(float(data['bgo_x1[keV]'][i]) * u.keV)
+				energies['x1'].append(float(data['SCB0-A1[keV]'][i]) * u.keV)
 
-			elif data['bgo_x2[keV]'][i] != 0.0:
+			elif data['SCB0-A0[keV]'][i] != 0.0:
 
-				times['x2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['x2'].append(float(data['bgo_x2[keV]'][i]) * u.keV)
+				times['x0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['x0'].append(float(data['SCB0-A0[keV]'][i]) * u.keV)
 
-			elif data['bgo_y1[keV]'][i] != 0.0:
+			elif data['SCB1-A0[keV]'][i] != 0.0:
+
+				times['y0'].append(float(data['timestamp[s]'][i]) * u.s)
+				energies['y0'].append(float(data['SCB1-A0[keV]'][i]) * u.keV)
+
+			elif data['SCB1-A1[keV]'][i] != 0.0:
 
 				times['y1'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['y1'].append(float(data['bgo_y1[keV]'][i]) * u.keV)
-
-			elif data['bgo_y2[keV]'][i] != 0.0:
-
-				times['y2'].append(float(data['timestamp[s]'][i]) * u.s)
-				energies['y2'].append(float(data['bgo_y2[keV]'][i]) * u.keV)
+				energies['y1'].append(float(data['SCB1-A1[keV]'][i]) * u.keV)
 
 		acs_data = cls({key: list(zip(times[key], energies[key])) for key in times})
 
@@ -253,12 +275,12 @@ class ACSData():
 					raise RuntimeError("Files must be binned with same energy bins.")
 
 				for panel, value in vars(data).items():
-					if panel in ['x1', 'x2', 'y1', 'y2', 'b1', 'b2']:
+					if panel in self.panels:
 						setattr(data, panel, np.add(value, getattr(component_data, panel)))
 
 			counts = 0
 			for panel, value in vars(data).items():
-				if panel in ['x1', 'x2', 'y1', 'y2', 'b1', 'b2']:
+				if panel in self.panels:
 					counts += np.sum(value)
 
 			logger.info(f"Added {file}. Total counts: {int(counts)}")
@@ -266,7 +288,7 @@ class ACSData():
 		return data
 
 	@classmethod
-	def convert(cls, input_file, output_file, mass_model=None):
+	def convert(cls, input_file, output_file, mass_model=None, stop_time=None, chunk_size=None):
 		'''
 		Convert ACS data file to .hdf5.
 
@@ -278,11 +300,15 @@ class ACSData():
 			Path to ACS data .hdf5 file
 		mass_model : pathlib.PosixPath, optional
 			Path to analysis mass model if reading .sim or .sim.gz file
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 		'''
 
 		logger.info(f"Converting {input_file} to .hdf5")
 
-		data = cls.from_file(input_file, mass_model=mass_model)
+		data = cls.from_file(input_file, mass_model=mass_model, stop_time=stop_time, chunk_size=chunk_size)
 
 		if (input_file.suffix == '.sim' or ''.join(input_file.suffixes) == '.csv.gz' or ''.join(input_file.suffixes) == '.sim.gz') and not output_file.exists():
 
@@ -318,7 +344,7 @@ class ACSData():
 
 		binned_data = {}
 
-		for panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+		for panel in self.panels:
 
 			unbinned_panel_data = getattr(self, panel)
 			unbinned_panel_data = [(t.to(u.s).value, e.to(u.keV).value) for t, e in unbinned_panel_data]
@@ -364,7 +390,7 @@ class ACSData():
 
 	def write_file(self, file):
 		'''
-		Write ACS data file or files.
+		Write ACS data file.
 
 		Parameters
 		----------
@@ -380,7 +406,7 @@ class ACSData():
 
 			for panel in list(vars(self)):
 
-				if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+				if panel in self.panels:
 
 					acs_data[panel] = getattr(self, panel)
 
@@ -393,12 +419,53 @@ class ACSData():
 
 			for panel in list(vars(self)):
 
-				if panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+				if panel in self.panels:
 
 					panel_data = {panel: [tuple(value.to(unit).value for value, unit in zip(hit, (u.s, u.keV))) for hit in getattr(self, panel)]}
 					acs_data = acs_data | panel_data
 
 			write_hdf5(file, acs_data, file_attributes={'type': 'unbinned', 'columns': ['time (s)', 'energy (keV)']})
+
+	def slice(self, start_time, end_time, file=None):
+		'''
+		and write to file.
+
+		Parameters
+		----------
+		start_time : astropy.units.quantity.Quantity
+			Start time of sliced data
+		end_time : astropy.units.quantity.Quantity
+			End time of sliced data
+		file : pathlib.PosixPath, optional
+			Path to ACS data .hdf5 file
+		'''
+
+		if self.binned:
+
+			i_start = np.searchsorted(self.time_bin_edges, start_time, side='right') - 1
+			i_end = np.searchsorted(self.time_bin_edges, end_time, side='left')
+
+			self.time_bin_edges = self.time_bin_edges[i_start:i_end+1]
+
+			for panel in self.panels:
+				setattr(self, panel, getattr(self, panel)[i_start:i_end, :])
+
+		else:
+
+			for panel in self.panels:
+
+				times = u.Quantity([t for t, _ in getattr(self, panel)])
+				energies = u.Quantity([e for _, e in getattr(self, panel)])
+
+				mask = (times >= t_start) & (times <= t_end)
+
+				times_sliced = times[mask]
+				energies_sliced = energies[mask]
+
+				setattr(self, panel, list(zip(times_sliced, energies_sliced)))
+
+		if file is not None:
+			self.write_file(file)
 
 	def plot(self, time_range, energy_range=(80.*u.keV, 2000*u.keV), bin_size=0.05*u.s, file=None, show=False, colors={'b1': 'red', 'b2': 'green', 'x1': 'blue', 'x2': 'orange', 'y1': 'purple', 'y2': 'pink'}, event_time_range=None, title=None, dpi=350):
 		'''
@@ -432,7 +499,7 @@ class ACSData():
 		time_range = (time_range[0], time_range[0] + duration)
 		bin_edges = np.linspace(time_range[0].to_value(u.s), time_range[1].to_value(u.s), nbins+1)
 
-		for panel in ['b1', 'b2', 'x1', 'x2', 'y1', 'y2']:
+		for panel in self.panels:
 
 			hits = getattr(self, panel)
 

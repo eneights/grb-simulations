@@ -65,7 +65,7 @@ def run_cosima(file, output_dir, zipped=True, overwrite=False):
 
 	os.chdir(cwd)
 
-def revan(file, output_dir, mass_model, config_file, overwrite=False):
+def run_revan(file, output_dir, mass_model, config_file, overwrite=False):
 	'''
 	Run revan on a .sim or .sim.gz file.
 
@@ -115,7 +115,7 @@ def revan(file, output_dir, mass_model, config_file, overwrite=False):
 
 	os.chdir(cwd)
 
-def mimrec(file, output_dir, mass_model, config_file, overwrite=False):
+def run_mimrec(file, output_dir, mass_model, config_file, overwrite=False):
 	'''
 	Run mimrec on a .tra.gz file.
 

@@ -1,6 +1,6 @@
 # COSI GRB Group Simulations
 
-This repository contains code to run COSI simulations of GRBs and other short-duration transients in bulk. 
+This repository contains code to run population-level COSI simulations of GRBs and other short-duration transients. 
 
 Simulations for the GRB group run using this pipeline should be uploaded [here](https://drive.google.com/drive/u/0/folders/11_qUIzQx3oGTjrb6voim0GB_EgXny9co).  
 
