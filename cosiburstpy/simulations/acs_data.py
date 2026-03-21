@@ -56,7 +56,7 @@ class ACSData():
 				raise RuntimeError(f"{panel} is not a valid panel name.")
 
 	@classmethod
-	def from_file(cls, file, mass_model=None, sort=True):
+	def from_file(cls, file, mass_model=None, sort=True, stop_time=None, chunk_size=None):
 		'''
 		Read in ACS data file.
 
@@ -68,6 +68,10 @@ class ACSData():
 			Path to analysis mass model if reading .sim or .sim.gz file
 		sort : bool, optional
 			Whether to sort by time
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 
 		Returns
 		-------
@@ -82,7 +86,7 @@ class ACSData():
 			acs_data = cls.from_sim_file(file, mass_model)
 
 		elif ''.join(file.suffixes) == '.csv.gz':
-			acs_data = cls.from_csv_file(file)
+			acs_data = cls.from_csv_file(file, stop_time=stop_time, chunk_size=chunk_size)
 
 		else:
 			raise RuntimeError(f"{file.suffix} files are not supported for ACS data.")
@@ -149,7 +153,7 @@ class ACSData():
 		return acs_data
 
 	@classmethod
-	def from_csv_file(cls, file):
+	def from_csv_file(cls, file, stop_time=None, chunk_size=None):
 		'''
 		Extract ACS hits from .csv.gz file in Savitri's format.
 
@@ -157,6 +161,10 @@ class ACSData():
 		----------
 		file : pathlib.PosixPath
 			Path to ACS data .csv.gz file
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 	
 		Returns
 		-------
@@ -169,7 +177,22 @@ class ACSData():
 		times = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
 		energies = {'z0': [], 'z1': [], 'x0': [], 'x1': [], 'y0': [], 'y1': []}
 
-		data = pd.read_csv(file, compression='gzip')
+		if chunk_size is None:
+
+			data = pd.read_csv(file, compression='gzip')
+
+		else:
+
+			chunks = []
+
+			for chunk in pd.read_csv(file, compression='gzip', chunksize=chunk_size):
+
+				chunks.append(chunk)
+
+				if (chunk['timestamp[s]'] == stop_time.to_value(u.s)).any():
+					break
+
+			data = pd.concat(chunks, ignore_index=True)
 		
 		for i in range(len(data['timestamp[s]'])):
 
@@ -265,7 +288,7 @@ class ACSData():
 		return data
 
 	@classmethod
-	def convert(cls, input_file, output_file, mass_model=None):
+	def convert(cls, input_file, output_file, mass_model=None, stop_time=None, chunk_size=None):
 		'''
 		Convert ACS data file to .hdf5.
 
@@ -277,11 +300,15 @@ class ACSData():
 			Path to ACS data .hdf5 file
 		mass_model : pathlib.PosixPath, optional
 			Path to analysis mass model if reading .sim or .sim.gz file
+		stop_time : astropy.units.quantity.Quantity, optional
+			Time to stop reading .csv file
+		chunk_size : int, optional
+			Size of chunks to read in
 		'''
 
 		logger.info(f"Converting {input_file} to .hdf5")
 
-		data = cls.from_file(input_file, mass_model=mass_model)
+		data = cls.from_file(input_file, mass_model=mass_model, stop_time=stop_time, chunk_size=chunk_size)
 
 		if (input_file.suffix == '.sim' or ''.join(input_file.suffixes) == '.csv.gz' or ''.join(input_file.suffixes) == '.sim.gz') and not output_file.exists():
 
