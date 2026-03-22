@@ -117,7 +117,7 @@ class ACSData():
 
 			bins = {'time': [value * u.s for value in data['time bins (s)']], 
 					'energy': [value * u.keV for value in data['energy bins (keV)']]}
-			data = {panel: data[panel] for panel in self.panels}
+			data = {panel: data[panel] for panel in ['z0', 'z1', 'x0', 'x1', 'y0', 'y1']}
 
 			acs_data = cls(data, binned=True, bins=bins)
 
@@ -275,12 +275,12 @@ class ACSData():
 					raise RuntimeError("Files must be binned with same energy bins.")
 
 				for panel, value in vars(data).items():
-					if panel in self.panels:
+					if panel in ['z0', 'z1', 'x0', 'x1', 'y0', 'y1']:
 						setattr(data, panel, np.add(value, getattr(component_data, panel)))
 
 			counts = 0
 			for panel, value in vars(data).items():
-				if panel in self.panels:
+				if panel in ['z0', 'z1', 'x0', 'x1', 'y0', 'y1']:
 					counts += np.sum(value)
 
 			logger.info(f"Added {file}. Total counts: {int(counts)}")
