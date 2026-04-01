@@ -14,7 +14,7 @@ dependencies = ["numpy",
                 "h5py"]
 [project.optional-dependencies]
 fermi-gbm = ["gdt",
-             "gdt-fermi"]
+             "astro-gdt-fermi"]
 
 [build-system]
 requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
