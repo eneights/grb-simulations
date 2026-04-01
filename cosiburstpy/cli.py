@@ -1,3 +1,6 @@
+import sys
+import subprocess
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: cosiburstpy [setup]")
