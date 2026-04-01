@@ -3,7 +3,7 @@ import glob
 import astropy.units as u
 from astropy.stats import bayesian_blocks
 import matplotlib.pyplot as plt
-import gdt.missions.fermi.gbm.tte.GbmTte as TTE
+from gdt.missions.fermi.gbm.tte import GbmTte
 from gdt.core.binning.unbinned import bin_by_time
 from gdt.core.background.fitter import BackgroundFitter
 from gdt.core.background.primitives import BackgroundRates
@@ -78,7 +78,7 @@ class BayesianBlocks():
 
 		for nai_file in self.nai_paths:
 
-			tte = TTE.open(nai_file)
+			tte = GbmTte.open(nai_file)
 
 			source_tte_detector = tte.slice_time([self.source_time_range[0].to(u.s).value, self.source_time_range[1].to(u.s).value])
 			source_tte_detector = source_tte_detector.slice_energy([self.nai_energy_range[0].to(u.keV).value, self.nai_energy_range[1].to(u.keV).value])
@@ -89,7 +89,7 @@ class BayesianBlocks():
 
 		for bgo_file in self.bgo_paths:
 
-			tte = TTE.open(bgo_file)
+			tte = GbmTte.open(bgo_file)
 
 			source_tte_detector = tte.slice_time([self.source_time_range[0].to(u.s).value, self.source_time_range[1].to(u.s).value])
 			source_tte_detector = source_tte_detector.slice_energy([self.bgo_energy_range[0].to(u.keV).value, self.bgo_energy_range[1].to(u.keV).value])
@@ -98,9 +98,9 @@ class BayesianBlocks():
 			background_tte_detector = tte.slice_time([self.background_time_range[0].to(u.s).value, self.background_time_range[1].to(u.s).value])
 			background_tte_bgo.append(background_tte_detector)
 
-		source_tte = TTE.merge(source_tte, force_unique=True)
-		background_tte_nai = TTE.merge(background_tte_nai, force_unique=True)
-		background_tte_bgo = TTE.merge(background_tte_bgo, force_unique=True)
+		source_tte = GbmTte.merge(source_tte, force_unique=True)
+		background_tte_nai = GbmTte.merge(background_tte_nai, force_unique=True)
+		background_tte_bgo = GbmTte.merge(background_tte_bgo, force_unique=True)
 
 		return source_tte, background_tte_nai, background_tte_bgo
 
