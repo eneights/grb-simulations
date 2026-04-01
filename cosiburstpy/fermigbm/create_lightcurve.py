@@ -3,11 +3,12 @@ import glob
 import astropy.units as u
 from astropy.stats import bayesian_blocks
 import matplotlib.pyplot as plt
-from gbm.data import TTE
-from gbm.binning.unbinned import bin_by_time
-from gbm.background import BackgroundFitter, BackgroundRates
-from gbm.background.binned import Polynomial
-import gbm.plot
+import gdt.missions.fermi.gbm.tte.GbmTte as TTE
+from gdt.core.binning.unbinned import bin_by_time
+from gdt.core.background.fitter import BackgroundFitter
+from gdt.core.background.primitives import BackgroundRates
+from gdt.core.background.binned import Polynomial
+import gdt.core.plot
 import logging
 from cosiburstpy.event.lightcurve import Lightcurve
 from cosiburstpy.utility.utility import read_yaml
@@ -63,11 +64,11 @@ class BayesianBlocks():
 
 		Returns
 		-------
-		source_tte : gbm.data.phaii.TTE
+		source_tte : gdt.core.tte.PhotonList
 			TTE data during source interval
-		background_tte_nai : gbm.data.phaii.TTE
+		background_tte_nai : gdt.core.tte.PhotonList
 			TTE data for NaI detectors during background interval
-		background_tte_bgo : gbm.data.phaii.TTE
+		background_tte_bgo : gdt.core.tte.PhotonList
 			TTE data for BGO detectors during background interval
 		'''
 
@@ -109,7 +110,7 @@ class BayesianBlocks():
 
 		Parameters
 		----------
-		tte : list of gbm.data.phaii.TTE
+		tte : list of gdt.core.tte.PhotonList
 			TTE data from each detector
 		p0 : float, optional
 			False alarm probability to compute prior
@@ -122,7 +123,7 @@ class BayesianBlocks():
 			Count rate in each Bayesian block bin (counts/s)
 		bins_bayesian : np.ndarray
 			Bayesian block bin edges (s)
-		lightcurve_plot : gbm.data.primitives.TimeBins
+		lightcurve_plot : gdt.core.data_primitives.TimeBins
 			Lightcurve for plotting
 		nbins : int
 			Number of bins for MEGAlib lightcurve
@@ -178,16 +179,16 @@ class BayesianBlocks():
 
 		Parameters
 		----------
-		background_tte_nai : gbm.data.phaii.TTE
+		background_tte_nai : gdt.core.tte.PhotonList
 			TTE data for NaI detectors during background interval
-		background_tte_bgo : gbm.data.phaii.TTE
+		background_tte_bgo : gdt.core.tte.PhotonList
 			TTE data for BGO detectors during background interval
 		order : int, optional
 			Order of polynomial to fit to background
 
 		Returns
 		-------
-		background_rates : gbm.background.background.BackgroundRates
+		background_rates : gdt.core.background.primitives.BackgroundRates
 			Background rates in NaI and BGO detectors
 		'''
 
@@ -224,7 +225,7 @@ class BayesianBlocks():
 			Count rate in each Bayesian block bin (counts/s)
 		bins_bayesian : np.ndarray, shape(N,)
 			Bayesian block bin edges (s)
-		background_rates : gbm.background.background.BackgroundRates
+		background_rates : gdt.core.background.primitives.BackgroundRates
 			Background rates in NaI and BGO detectors
 
 		Returns
@@ -278,9 +279,9 @@ class BayesianBlocks():
 
 		Parameters
 		----------
-		lightcurve_plot : gbm.data.primitives.TimeBins
+		lightcurve_plot : gdt.core.background.primitives.TimeBins
 			Lightcurve for plotting
-		background_rates : gbm.background.background.BackgroundRates
+		background_rates : gdt.core.background.primitives.BackgroundRates
 			Background rates in NaI and BGO detectors
 		bins_bayesian : np.ndarray, shape(N,)
 			Bayesian block bin edges (s)
@@ -296,7 +297,7 @@ class BayesianBlocks():
 
 		plot_path.mkdir(parents=True, exist_ok=True)
 
-		lcplot = gbm.plot.Lightcurve(data=lightcurve_plot, background=background_rates)
+		lcplot = gdt.core.plot.Lightcurve(data=lightcurve_plot, background=background_rates)
 		lcplot.lightcurve.color='grey'
 		lcplot.lightcurve.alpha=0.5
 		lcplot.background.color='purple'

@@ -1,4 +1,5 @@
-from gbm.finder import BurstCatalog, TriggerFtp
+from gdt.missions.fermi.gbm.catalogs import BurstCatalog
+from gdt.missions.fermi.gbm.finders import TriggerFtp
 import logging
 from cosiburstpy.utility.utility import write_yaml, make_dict
 

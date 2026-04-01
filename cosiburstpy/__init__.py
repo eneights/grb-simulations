@@ -4,8 +4,8 @@ from .simulations import ACSData, EventTable, SpacecraftOrientation
 from .megalib import simulate, reconstruct, extract
 
 try:
-	from .gbm import BayesianBlocks, DataDownload
+	from .fermigbm import BayesianBlocks, DataDownload
 except:
 	import logging
 	logger = logging.getLogger(__name__)
-	logger.warning('Unable to load gbm module.')
+	logger.warning('Unable to load Fermi-GBM modules. GDT may not be installed.')
