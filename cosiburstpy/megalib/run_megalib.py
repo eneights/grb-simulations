@@ -231,6 +231,6 @@ def extract(tra_dir, output_dir, mass_model, config_file, overwrite=False):
 
 	for tra_file in tra_dir.iterdir():
 
-		if 'tra' in tra_file.suffixes:
+		if '.tra' in tra_file.suffixes:
 
 			run_mimrec(tra_file, output_dir, mass_model, config_file, overwrite)
