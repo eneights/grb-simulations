@@ -1,5 +1,5 @@
 from gdt.missions.fermi.gbm.catalogs import BurstCatalog
-from gdt.missions.fermi.gbm.finders import TriggerFtp
+from gdt.missions.fermi.gbm.finders import TriggerFinder
 import logging
 from cosiburstpy.utility.utility import write_yaml, make_dict
 
@@ -28,6 +28,9 @@ class DataDownload():
 
 		if not 'trigger_name' in self.download:
 			self.download.append('trigger_name')
+
+		if not 'bcat_detector_mask' in self.download:
+			self.download.append('bcat_detector_mask')
 
 		if filters:
 
@@ -65,11 +68,8 @@ class DataDownload():
 		Download TTE data.
 		'''
 
-		if not 'bcat_detector_mask' in self.download:
-			self.download.append('bcat_detector_mask')
-
 		event_list = self.catalog.get_table(columns=self.download)
-		trigger_finder = TriggerFtp(event_list[len(event_list)-1][self.download.index('trigger_name')].replace('bn', ''))
+		trigger_finder = TriggerFinder()
 
 		for i, event in enumerate(event_list):
 
@@ -79,7 +79,7 @@ class DataDownload():
 			(self.output / name).mkdir(parents=True, exist_ok=True)
 
 			detectors = event[self.download.index('bcat_detector_mask')]
-			trigger_finder.set_trigger(name.replace('bn', ''))
+			trigger_finder.cd(name.replace('bn', ''))
 		
 			detector_list = []
 
