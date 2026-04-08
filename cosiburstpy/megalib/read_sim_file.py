@@ -172,8 +172,8 @@ def read_sim_file(file, mass_model):
 				energies['z0'].append(float(z0_3) * u.keV)
 
 			if z0_4 >= 80.:
-				times['z0'].append(float(time) * u.s)
-				energies['z0'].append(float(z0_4) * u.keV)
+				times['y0'].append(float(time) * u.s)
+				energies['y0'].append(float(z0_4) * u.keV)
 
 			if z1_0 >= 80.:
 				times['y1'].append(float(time) * u.s)
