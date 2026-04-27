@@ -55,7 +55,7 @@ class DataDownload():
 
 		for i, event in enumerate(event_list):
 
-			name = event[self.download.index('trigger_name')]
+			name = event[self.download.index('trigger_name')][:11]
 
 			logger.info(f"Downloading burst catalog data for {name} ({i+1}/{len(event_list)})")
 			(self.output / name).mkdir(parents=True, exist_ok=True)
